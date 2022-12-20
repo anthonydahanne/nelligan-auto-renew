@@ -18,17 +18,18 @@ public class NelliganClient {
 
 // Not needed for now - but could be necessary in the future
 //    private final String NELLIGAN_DECOUVERTE_BASE_URL = "https://nelligandecouverte.ville.montreal.qc.ca";
-    private final String NELLIGAN_BASE_URL = "https://nelligan.ville.montreal.qc.ca";
+    private static final String NELLIGAN_BASE_URL = "https://nelligan.ville.montreal.qc.ca";
 
+    private String baseUrl = NELLIGAN_BASE_URL;
 
     public PatronInfo authenticateAndPatronInfo(Client client, String username, String password) {
-        WebTarget target = client.target(NELLIGAN_BASE_URL + "/patroninfo");
+        WebTarget target = client.target(baseUrl + "/patroninfo");
         Response response = target
                 .request()
                 .header(HttpHeaders.USER_AGENT, USER_AGENT)
                 .post(Entity.entity("code=" + username + "&pin=" + password, MediaType.APPLICATION_FORM_URLENCODED));
 
-        String location = NELLIGAN_BASE_URL + response.getHeaderString("Location");
+        String location = baseUrl + response.getHeaderString("Location");
         target = client.target(location);
         response = target
                 .request()
@@ -51,11 +52,13 @@ public class NelliganClient {
                 .items()
                 .stream()
                 .filter(itemToFilter -> itemToFilter.rValue().equals(item.rValue())).findFirst().orElseThrow();
-        if(!renewedItem.error().isBlank()) {
+        if (!renewedItem.error().isBlank()) {
             throw new UnRenewableItemException(renewedItem.error());
         }
         return renewedItem;
     }
 
-
+    void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
 }

@@ -28,7 +28,7 @@ public class ParseUtils {
         var record = hrefValue.substring(hrefValue.indexOf("=") + 1, hrefValue.indexOf("~"));
         var patFuncRenewCount = element.getElementsByClass("patFuncRenewCount").first();
         var renewed = patFuncRenewCount == null ? 0 : Integer.parseInt(patFuncRenewCount.text().trim().split(" ")[1]);
-        String error = (extraInfo.contains("NOT") || extraInfo.contains("ON HOLD") || extraInfo.contains("TOO SOON")) ? extraInfo : "";
+        String error = (extraInfo.contains("NOT") || extraInfo.contains("ON HOLD") || extraInfo.contains("TOO SOON")|| extraInfo.contains("TOO MANY")) ? extraInfo : "";
         dueDate = extraInfo.contains("Now due") ? LocalDate.parse(extraInfo.substring(extraInfo.indexOf("Now due") + 8, extraInfo.indexOf("Now due") + 16), DATE_TIME_FORMATTER) : dueDate;
         return new Item(title, barcode, dueDate, callNumber, rValue, record, renewed, error);
     };

@@ -42,7 +42,7 @@ public class ParseUtilsTest {
                     "LUCKY_LUK",
                     "i8750499",
                     "b1078634",
-                    1,
+                    3,
                     "");
             assertEquals(renewedItem, patronInfo.items().get(23));
         }

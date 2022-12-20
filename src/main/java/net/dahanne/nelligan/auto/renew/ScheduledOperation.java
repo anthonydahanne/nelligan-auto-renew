@@ -36,7 +36,7 @@ public class ScheduledOperation {
         this.nelliganClient = nelliganClient;
     }
 
-    @Scheduled(every = "{renew.frequency}")
+    @Scheduled(every = "{renew.frequency}", delayed = "${renew.delay:0m}")
     public void runSchedule() {
         LocalDate now = LocalDate.now();
         StringBuilder emailBuilder = new StringBuilder();
@@ -54,7 +54,7 @@ public class ScheduledOperation {
                         emailBuilder.append(formattedRenewMessage).append("\n");
                     } catch (UnRenewableItemException e) {
                         issuesRenewing.set(true);
-                        String formattedNotRenewedMessage = String.format("Impossible to renew the item %s, due date is still %s, it has been renewed %d times, error is : %s", item.title(), item.dueDate(), item.renewed(), e.getMessage());
+                        String formattedNotRenewedMessage = String.format("Impossible to renew the item %s, bound to patron named %s, due date is still %s, it has been renewed %d times, error is : %s", item.title(), patronInfo.name(), item.dueDate(), item.renewed(), e.getMessage());
                         LOG.warn(formattedNotRenewedMessage);
                         emailBuilder.append(formattedNotRenewedMessage).append("\n");
                     }

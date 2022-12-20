@@ -1,50 +1,54 @@
 package net.dahanne.nelligan.auto.renew;
 
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.client.Client;
-import java.util.stream.Collectors;
 
 import static net.dahanne.nelligan.auto.renew.HttpClientUtils.createNewHttpClient;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @QuarkusTest
-@Disabled
+@QuarkusTestResource(WireMockExtensions.class)
 public class NelliganClientTest {
+
+    private final String baseUrl;
+    NelliganClient nelliganClient;
 
     CredentialsCollections.Credentials credentials;
     CredentialsCollections credentialsCollections;
-    NelliganClient nelliganClient;
 
-    public NelliganClientTest(CredentialsCollections credentialsCollections, NelliganClient nelliganClient) {
+
+    public NelliganClientTest(CredentialsCollections credentialsCollections,
+                              NelliganClient nelliganClient,
+                              @ConfigProperty(name = "quarkus.rest-client.url") String baseUrl) {
         this.credentialsCollections = credentialsCollections;
         this.nelliganClient = nelliganClient;
+        this.baseUrl = baseUrl;
     }
 
     @BeforeEach
     void before() {
-        credentials = credentialsCollections.credentials().stream().toList().get(1);
+        nelliganClient.setBaseUrl(baseUrl);
+        credentials = credentialsCollections.credentials().stream().toList().get(0);
     }
 
     @Test
-    void authenticateAndPatronInfoTest() {
-        credentialsCollections.credentials().forEach(credentialsInstance -> {
-            Client client = createNewHttpClient();
-            PatronInfo patronInfo = nelliganClient.authenticateAndPatronInfo(client, credentialsInstance.username(), credentialsInstance.password());
-            System.out.println(patronInfo.name());
-            patronInfo.items().forEach(System.out::println);
-        });
-    }
-
-    @Test
-    void renewTest() {
+    void cantRenewWhen3RenewedTimesTest() {
         Client client = createNewHttpClient();
         PatronInfo patronInfo = nelliganClient.authenticateAndPatronInfo(client, credentials.username(), credentials.password());
-        Item item = patronInfo.items().get(21);
-        Item renewedItem = nelliganClient.renew(client, patronInfo.location(), item);
-        System.out.println(renewedItem);
+        // this item has been renewed 3 times already
+        Item item = patronInfo.items().get(0);
+        try {
+            nelliganClient.renew(client, patronInfo.location(), item);
+            fail("Did not throw expected exception");
+        } catch (UnRenewableItemException e) {
+            assertThat(e.getMessage(), equalTo("TOO MANY RENEWALS Renewed 3 times"));
+        }
     }
-
 }
