@@ -2,7 +2,7 @@ package net.dahanne.nelligan.auto.renew;
 
 import org.jboss.logging.Logger;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @io.quarkus.runtime.Startup
 @ApplicationScoped

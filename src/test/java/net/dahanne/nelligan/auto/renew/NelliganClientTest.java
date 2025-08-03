@@ -6,7 +6,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.client.Client;
+import jakarta.ws.rs.client.Client;
 
 import static net.dahanne.nelligan.auto.renew.HttpClientUtils.createNewHttpClient;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -35,7 +35,7 @@ public class NelliganClientTest {
     @BeforeEach
     void before() {
         nelliganClient.setBaseUrl(baseUrl);
-        credentials = credentialsCollections.credentials().stream().toList().get(0);
+        credentials = credentialsCollections.credentials().stream().toList().getFirst();
     }
 
     @Test
@@ -43,7 +43,7 @@ public class NelliganClientTest {
         Client client = createNewHttpClient();
         PatronInfo patronInfo = nelliganClient.authenticateAndPatronInfo(client, credentials.username(), credentials.password());
         // this item has been renewed 3 times already
-        Item item = patronInfo.items().get(0);
+        Item item = patronInfo.items().getFirst();
         try {
             nelliganClient.renew(client, patronInfo.location(), item);
             fail("Did not throw expected exception");

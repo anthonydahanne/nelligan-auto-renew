@@ -3,7 +3,7 @@ package net.dahanne.nelligan.auto.renew;
 import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient43Engine;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 
-import javax.ws.rs.client.Client;
+import jakarta.ws.rs.client.Client;
 
 public class HttpClientUtils {
 

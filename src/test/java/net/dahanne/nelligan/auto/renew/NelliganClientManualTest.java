@@ -5,7 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.client.Client;
+import jakarta.ws.rs.client.Client;
 
 import static net.dahanne.nelligan.auto.renew.HttpClientUtils.createNewHttpClient;
 
@@ -24,7 +24,7 @@ public class NelliganClientManualTest {
 
     @BeforeEach
     void before() {
-        credentials = credentialsCollections.credentials().stream().toList().get(0);
+        credentials = credentialsCollections.credentials().stream().toList().getFirst();
     }
 
     @Test
@@ -41,7 +41,7 @@ public class NelliganClientManualTest {
     void renewTest() {
         Client client = createNewHttpClient();
         PatronInfo patronInfo = nelliganClient.authenticateAndPatronInfo(client, credentials.username(), credentials.password());
-        Item item = patronInfo.items().get(0);
+        Item item = patronInfo.items().getFirst();
         Item renewedItem = nelliganClient.renew(client, patronInfo.location(), item);
         System.out.println(renewedItem);
     }

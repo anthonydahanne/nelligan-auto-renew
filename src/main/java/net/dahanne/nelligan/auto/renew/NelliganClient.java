@@ -1,19 +1,16 @@
 package net.dahanne.nelligan.auto.renew;
 
-import org.jboss.logging.Logger;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 @ApplicationScoped
 public class NelliganClient {
 
-    private static final Logger LOG = Logger.getLogger(NelliganClient.class);
     public static final String USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36";
 
 // Not needed for now - but could be necessary in the future
@@ -23,39 +20,42 @@ public class NelliganClient {
     private String baseUrl = NELLIGAN_BASE_URL;
 
     public PatronInfo authenticateAndPatronInfo(Client client, String username, String password) {
-        WebTarget target = client.target(baseUrl + "/patroninfo");
-        Response response = target
+        WebTarget patronInfoTarget = client.target(baseUrl + "/patroninfo");
+        try (Response patronInfoResponse = patronInfoTarget
                 .request()
                 .header(HttpHeaders.USER_AGENT, USER_AGENT)
-                .post(Entity.entity("code=" + username + "&pin=" + password, MediaType.APPLICATION_FORM_URLENCODED));
+                .post(Entity.entity("code=" + username + "&pin=" + password, MediaType.APPLICATION_FORM_URLENCODED))) {
 
-        String location = baseUrl + response.getHeaderString("Location");
-        target = client.target(location);
-        response = target
-                .request()
-                .header(HttpHeaders.USER_AGENT, USER_AGENT)
-                .get();
+            String location = baseUrl + patronInfoResponse.getHeaderString("Location");
+            var locationHeaderTarget = client.target(location);
+            var locationHeaderResponse = locationHeaderTarget
+                    .request()
+                    .header(HttpHeaders.USER_AGENT, USER_AGENT)
+                    .get();
 
-        String patronInfoAsString = response.readEntity(String.class);
-        return ParseUtils.parsePatronInfoPage(patronInfoAsString, location);
+            String patronInfoAsString = locationHeaderResponse.readEntity(String.class);
+            return ParseUtils.parsePatronInfoPage(patronInfoAsString, location);
+        }
+
     }
 
     public Item renew(Client client, String location, Item item) {
         WebTarget target = client.target(location);
-        Response response = target
+        try(Response response = target
                 .request()
                 .header(HttpHeaders.USER_AGENT, USER_AGENT)
-                .post(Entity.entity("value=" + item.rValue(), MediaType.APPLICATION_FORM_URLENCODED));
-        String renewPageAsString = response.readEntity(String.class);
-        PatronInfo patronInfo = ParseUtils.parsePatronInfoPage(renewPageAsString, location);
-        Item renewedItem = patronInfo
-                .items()
-                .stream()
-                .filter(itemToFilter -> itemToFilter.rValue().equals(item.rValue())).findFirst().orElseThrow();
-        if (!renewedItem.error().isBlank()) {
-            throw new UnRenewableItemException(renewedItem.error());
+                .post(Entity.entity("value=" + item.rValue(), MediaType.APPLICATION_FORM_URLENCODED))){
+            String renewPageAsString = response.readEntity(String.class);
+            PatronInfo patronInfo = ParseUtils.parsePatronInfoPage(renewPageAsString, location);
+            Item renewedItem = patronInfo
+                    .items()
+                    .stream()
+                    .filter(itemToFilter -> itemToFilter.rValue().equals(item.rValue())).findFirst().orElseThrow();
+            if (!renewedItem.error().isBlank()) {
+                throw new UnRenewableItemException(renewedItem.error());
+            }
+            return renewedItem;
         }
-        return renewedItem;
     }
 
     void setBaseUrl(String baseUrl) {
