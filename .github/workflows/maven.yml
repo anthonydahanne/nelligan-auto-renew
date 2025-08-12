@@ -5,9 +5,9 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "use-playwright" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "use-playwright" ]
 
 jobs:
   build:
@@ -15,16 +15,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up JDK 17
-      uses: actions/setup-java@v3
+    - uses: actions/checkout@v4
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'temurin'
         cache: maven
+    - name: Set up Maven settings for GitHub Packages
+      run: |
+        echo "<settings>
+                <servers>
+                  <server>
+                    <id>github</id>
+                    <username>${{ github.actor }}</username>
+                    <password>${{ secrets.GITHUB_TOKEN }}</password>
+                  </server>
+                </servers>
+              </settings>" > $HOME/.m2/settings.xml
+
+    - name: Bump patch version in pom.xml, commit, and push
+      run: |
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+        PATCH_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout | awk -F. '{print $1"."$2"."$3+1}')
+        ./mvnw -B versions:set -DnewVersion=$PATCH_VERSION
+        ./mvnw -B versions:commit
+        git add pom.xml
+        git commit -m "Bump patch version to $PATCH_VERSION [skip ci]"
+        git push
+
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
-    - uses: superfly/flyctl-actions/setup-flyctl@master
-    - run: flyctl deploy --remote-only
-      env:
-        FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      run: ./mvnw -B package
+
+    - name: Publish to GitHub Packages
+      run: ./mvnw -B deploy

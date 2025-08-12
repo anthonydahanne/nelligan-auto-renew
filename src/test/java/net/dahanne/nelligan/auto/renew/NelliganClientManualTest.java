@@ -5,9 +5,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.client.Client;
-
-import static net.dahanne.nelligan.auto.renew.HttpClientUtils.createNewHttpClient;
 
 @QuarkusTest
 @Disabled
@@ -28,22 +25,21 @@ public class NelliganClientManualTest {
     }
 
     @Test
-    void authenticateAndPatronInfoTest() {
+    void authenticateAndRenewTest() {
         credentialsCollections.credentials().forEach(credentialsInstance -> {
-            Client client = createNewHttpClient();
-            PatronInfo patronInfo = nelliganClient.authenticateAndPatronInfo(client, credentialsInstance.username(), credentialsInstance.password());
+            PatronInfo patronInfo = nelliganClient.authenticateAndRenew(credentialsInstance.username(), credentialsInstance.password(), 2);
             System.out.println(patronInfo.name());
             patronInfo.items().forEach(System.out::println);
         });
     }
 
-    @Test
-    void renewTest() {
-        Client client = createNewHttpClient();
-        PatronInfo patronInfo = nelliganClient.authenticateAndPatronInfo(client, credentials.username(), credentials.password());
-        Item item = patronInfo.items().getFirst();
-        Item renewedItem = nelliganClient.renew(client, patronInfo.location(), item);
-        System.out.println(renewedItem);
-    }
+//    @Test
+//    void renewTest() {
+//        Client client = createNewHttpClient();
+//        PatronInfo patronInfo = nelliganClient.authenticateAndPatronInfo(client, credentials.username(), credentials.password());
+//        Item item = patronInfo.items().getFirst();
+//        Item renewedItem = nelliganClient.renew(patronInfo.location(), item);
+//        System.out.println(renewedItem);
+//    }
 
 }
