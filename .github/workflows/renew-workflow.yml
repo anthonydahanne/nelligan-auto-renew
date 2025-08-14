@@ -1,0 +1,48 @@
+name: Sync OSS Mirror
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - schedule-renew
+  schedule:
+    - cron: "15 5 * * 2,3,5"
+
+jobs:
+  renew-all-accounts:
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE_NAME: "net.dahanne.nelligan-auto-renew"
+      OWNER: ${{github.actor}}
+      REPO_NAME: nelligan-auto-renew
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Get latest package version
+        id: get_latest_version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          API_URL="https://api.github.com/users/$OWNER/packages/maven/$PACKAGE_NAME/versions"
+          VERSION=$(curl -s -H "Authorization: Bearer $GH_TOKEN" $API_URL | jq -r '.[0].name')
+          echo "latest_version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download latest jar
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${{ steps.get_latest_version.outputs.latest_version }}
+          JAR_NAME="$REPO_NAME-$VERSION.jar"
+          MAVEN_URL="https://maven.pkg.github.com/$OWNER/$REPO_NAME/net.dahanne/$REPO_NAME/$VERSION/$REPO_NAME-$VERSION.jar"
+          curl -L -u "$OWNER:$GH_TOKEN" $MAVEN_URL -o "$JAR_NAME"
+          ls -al
+          pwd
+
+      - name: Run the jar
+        run: |
+          VERSION=${{ steps.get_latest_version.outputs.latest_version }}
+          java -jar $REPO_NAME-$VERSION.jar
